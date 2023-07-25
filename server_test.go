@@ -7,11 +7,14 @@ import (
 	"net/http/httptest"
 	"server"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 type StubPlayerStore struct {
 	scores   map[string]int
 	winCalls []string
+	league   []server.Player
 }
 
 func (s *StubPlayerStore) GetPlayerScore(name string) int {
@@ -20,6 +23,10 @@ func (s *StubPlayerStore) GetPlayerScore(name string) int {
 
 func (s *StubPlayerStore) RecordWin(name string) {
 	s.winCalls = append(s.winCalls, name)
+}
+
+func (s *StubPlayerStore) GetLeague() []server.Player {
+	return s.league
 }
 
 func TestGETPlayers(t *testing.T) {
@@ -124,7 +131,7 @@ func TestLeague(t *testing.T) {
 	store := StubPlayerStore{}
 	playerServer := server.NewPlayerServer(&store)
 
-	t.Run("it returns 200 on /league", func(t *testing.T) {
+	t.Run("it returns 200 and valid json response on /league", func(t *testing.T) {
 		request, _ := http.NewRequest(http.MethodGet, "/league", nil)
 		response := httptest.NewRecorder()
 
@@ -137,5 +144,33 @@ func TestLeague(t *testing.T) {
 		}
 
 		assertStatus(t, response.Code, http.StatusOK)
+	})
+
+	t.Run("it returns the league table as JSON", func(t *testing.T) {
+		wantedLeague := []server.Player{
+			{"Cleo", 32},
+			{"Chris", 20},
+			{"Tiest", 14},
+		}
+		store.league = wantedLeague
+
+		request, _ := http.NewRequest(http.MethodGet, "/league", nil)
+		response := httptest.NewRecorder()
+
+		playerServer.ServeHTTP(response, request)
+
+		assertStatus(t, response.Code, http.StatusOK)
+
+		// assert valid json
+		var got []server.Player
+		err := json.NewDecoder(response.Body).Decode(&got)
+		if err != nil {
+			t.Fatalf("Unable to parse response from server %q into slice of Player, '%v'", response.Body, got)
+		}
+
+		// assert json contents
+		if !cmp.Equal(got, wantedLeague) {
+			t.Errorf(cmp.Diff(wantedLeague, got))
+		}
 	})
 }
