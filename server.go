@@ -16,23 +16,14 @@ type PlayerServer struct {
 }
 
 func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// In this state, it's quite odd (and inefficient) to be setting up a
+	// router as a request comes in and then calling it. What we ideally
+	// want is have some king of `NewPlayerServer` function which will take
+	// our dependencies and do the one-time setup of creating the router.
+	// Each request can then just use that one instance of the router.
 	router := http.NewServeMux()
-
-	router.Handle("/league", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-
-	router.Handle("/players/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		player := strings.TrimPrefix(r.URL.Path, "/players/")
-
-		switch r.Method {
-		case http.MethodGet:
-			p.showScore(w, player)
-		case http.MethodPost:
-			p.processWin(w, player)
-		}
-	}))
-
+	router.Handle("/league", http.HandlerFunc(p.leagueHandler))
+	router.Handle("/players/", http.HandlerFunc(p.playersHandler))
 	router.ServeHTTP(w, r)
 }
 
@@ -47,6 +38,21 @@ func (p *PlayerServer) showScore(w http.ResponseWriter, player string) {
 func (p *PlayerServer) processWin(w http.ResponseWriter, player string) {
 	p.Store.RecordWin(player)
 	w.WriteHeader(http.StatusAccepted)
+}
+
+func (p *PlayerServer) leagueHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
+func (p *PlayerServer) playersHandler(w http.ResponseWriter, r *http.Request) {
+	player := strings.TrimPrefix(r.URL.Path, "/players/")
+
+	switch r.Method {
+	case http.MethodGet:
+		p.showScore(w, player)
+	case http.MethodPost:
+		p.processWin(w, player)
+	}
 }
 
 // func GetPlayerScore(name string) string {
