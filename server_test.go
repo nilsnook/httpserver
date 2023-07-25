@@ -3,6 +3,7 @@ package server_test
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"server"
@@ -131,21 +132,6 @@ func TestLeague(t *testing.T) {
 	store := StubPlayerStore{}
 	playerServer := server.NewPlayerServer(&store)
 
-	t.Run("it returns 200 and valid json response on /league", func(t *testing.T) {
-		request, _ := http.NewRequest(http.MethodGet, "/league", nil)
-		response := httptest.NewRecorder()
-
-		playerServer.ServeHTTP(response, request)
-
-		var got []server.Player
-		err := json.NewDecoder(response.Body).Decode(&got)
-		if err != nil {
-			t.Fatalf("Unable to parse response from server %q into slice of Player, '%v'", response.Body, got)
-		}
-
-		assertStatus(t, response.Code, http.StatusOK)
-	})
-
 	t.Run("it returns the league table as JSON", func(t *testing.T) {
 		wantedLeague := []server.Player{
 			{"Cleo", 32},
@@ -154,23 +140,34 @@ func TestLeague(t *testing.T) {
 		}
 		store.league = wantedLeague
 
-		request, _ := http.NewRequest(http.MethodGet, "/league", nil)
+		request := newLeagueRequest()
 		response := httptest.NewRecorder()
 
 		playerServer.ServeHTTP(response, request)
 
 		assertStatus(t, response.Code, http.StatusOK)
-
-		// assert valid json
-		var got []server.Player
-		err := json.NewDecoder(response.Body).Decode(&got)
-		if err != nil {
-			t.Fatalf("Unable to parse response from server %q into slice of Player, '%v'", response.Body, got)
-		}
-
-		// assert json contents
-		if !cmp.Equal(got, wantedLeague) {
-			t.Errorf(cmp.Diff(wantedLeague, got))
-		}
+		got := getLeagueFromResponse(t, response.Body)
+		assertLeague(t, wantedLeague, got)
 	})
+}
+
+func newLeagueRequest() *http.Request {
+	req, _ := http.NewRequest(http.MethodGet, "/league", nil)
+	return req
+}
+
+func getLeagueFromResponse(t testing.TB, body io.Reader) (league []server.Player) {
+	t.Helper()
+	err := json.NewDecoder(body).Decode(&league)
+	if err != nil {
+		t.Fatalf("Unable to parse response from server %q into slice of Player, '%v'", body, err)
+	}
+	return
+}
+
+func assertLeague(t testing.TB, want, got []server.Player) {
+	t.Helper()
+	if !cmp.Equal(want, got) {
+		t.Errorf(cmp.Diff(want, got))
+	}
 }
