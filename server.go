@@ -12,19 +12,24 @@ type PlayerStore interface {
 }
 
 type PlayerServer struct {
-	Store PlayerStore
+	Store  PlayerStore
+	router *http.ServeMux
+}
+
+func NewPlayerServer(store PlayerStore) *PlayerServer {
+	p := &PlayerServer{
+		store,
+		http.NewServeMux(),
+	}
+
+	p.router.Handle("/league", http.HandlerFunc(p.leagueHandler))
+	p.router.Handle("/players/", http.HandlerFunc(p.playersHandler))
+
+	return p
 }
 
 func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// In this state, it's quite odd (and inefficient) to be setting up a
-	// router as a request comes in and then calling it. What we ideally
-	// want is have some king of `NewPlayerServer` function which will take
-	// our dependencies and do the one-time setup of creating the router.
-	// Each request can then just use that one instance of the router.
-	router := http.NewServeMux()
-	router.Handle("/league", http.HandlerFunc(p.leagueHandler))
-	router.Handle("/players/", http.HandlerFunc(p.playersHandler))
-	router.ServeHTTP(w, r)
+	p.router.ServeHTTP(w, r)
 }
 
 func (p *PlayerServer) showScore(w http.ResponseWriter, player string) {
