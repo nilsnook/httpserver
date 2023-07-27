@@ -6,7 +6,8 @@ import (
 
 type FileSystemPlayerStore struct {
 	// Database io.Reader
-	Database io.ReadSeeker
+	// Database io.ReadSeeker
+	Database io.ReadWriteSeeker
 }
 
 func (f *FileSystemPlayerStore) GetLeague() []Player {
