@@ -26,7 +26,7 @@ func (s *StubPlayerStore) RecordWin(name string) {
 	s.winCalls = append(s.winCalls, name)
 }
 
-func (s *StubPlayerStore) GetLeague() []server.Player {
+func (s *StubPlayerStore) GetLeague() server.League {
 	return s.league
 }
 
