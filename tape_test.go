@@ -2,7 +2,6 @@ package server_test
 
 import (
 	"io"
-	"os"
 	"server"
 	"testing"
 )
@@ -11,7 +10,7 @@ func TestTapeWrite(t *testing.T) {
 	file, clean := createTempFile(t, "12345")
 	defer clean()
 
-	tape := &server.Tape{file.(*os.File)}
+	tape := &server.Tape{file}
 	tape.Write([]byte("abc"))
 
 	file.Seek(0, io.SeekStart)
