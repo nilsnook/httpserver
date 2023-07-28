@@ -9,9 +9,15 @@ import (
 
 func TestRecordingWinsAndRetrievingThem(t *testing.T) {
 	// store := server.NewInMemoryPlayerStore()
-	database, cleanDatabase := createTempFile(t, "")
+
+	// Earlier we were not getting errors before because
+	// we always just ignored them -> line 19
+	// database, cleanDatabase := createTempFile(t, "")
+
+	database, cleanDatabase := createTempFile(t, `[]`)
 	defer cleanDatabase()
-	store := server.NewFileSystemPlayerStore(database)
+	store, err := server.NewFileSystemPlayerStore(database)
+	assertNotError(t, err)
 	playerServer := server.NewPlayerServer(store)
 	player := "Pepper"
 

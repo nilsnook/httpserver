@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 )
@@ -67,11 +68,14 @@ func (f *FileSystemPlayerStore) RecordWin(name string) {
 	f.Database.Encode(f.League)
 }
 
-func NewFileSystemPlayerStore(file *os.File) *FileSystemPlayerStore {
+func NewFileSystemPlayerStore(file *os.File) (*FileSystemPlayerStore, error) {
 	file.Seek(0, io.SeekStart)
-	league, _ := NewLeague(file)
+	league, err := NewLeague(file)
+	if err != nil {
+		return nil, fmt.Errorf("Problem loading player store from file %s, %v", file.Name(), err)
+	}
 	return &FileSystemPlayerStore{
 		Database: json.NewEncoder(&Tape{file}),
 		League:   league,
-	}
+	}, nil
 }
