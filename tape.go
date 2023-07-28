@@ -1,12 +1,16 @@
 package server
 
-import "io"
+import (
+	"io"
+	"os"
+)
 
 type Tape struct {
-	file io.ReadWriteSeeker
+	File *os.File
 }
 
 func (t *Tape) Write(p []byte) (n int, err error) {
-	t.file.Seek(0, io.SeekStart)
-	return t.file.Write(p)
+	t.File.Truncate(0)
+	t.File.Seek(0, io.SeekStart)
+	return t.File.Write(p)
 }

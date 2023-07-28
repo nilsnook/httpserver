@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"io"
+	"os"
 )
 
 type FileSystemPlayerStore struct {
@@ -68,7 +69,7 @@ func NewFileSystemPlayerStore(database io.ReadWriteSeeker) *FileSystemPlayerStor
 	database.Seek(0, io.SeekStart)
 	league, _ := NewLeague(database)
 	return &FileSystemPlayerStore{
-		Database: &Tape{database},
+		Database: &Tape{database.(*os.File)},
 		League:   league,
 	}
 }
