@@ -17,7 +17,7 @@ func TestFileSystemStore(t *testing.T) {
 		{"Name": "Chris", "Wins": 33}
 	]`)
 	defer cleanDatabase()
-	store := server.FileSystemPlayerStore{database}
+	store := server.NewFileSystemPlayerStore(database)
 
 	t.Run("league from a reader", func(t *testing.T) {
 		want := []server.Player{
